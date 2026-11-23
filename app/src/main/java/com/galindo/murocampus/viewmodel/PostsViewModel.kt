@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.galindo.murocampus.data.PostRepository
 import com.galindo.murocampus.model.Comentario
+import com.galindo.murocampus.model.NuevoPost
 import com.galindo.murocampus.model.Post
 import com.galindo.murocampus.ui.UiState
 import com.galindo.murocampus.ui.mensajeDe
@@ -29,6 +30,9 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     private val _usuarioFiltro = MutableStateFlow<Int?>(null)
     val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
+
+    private val _creacion = MutableStateFlow<UiState<Post>?>(null)
+    val creacion: StateFlow<UiState<Post>?> = _creacion.asStateFlow()
 
     init {
         cargar()
@@ -70,5 +74,18 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
                 }
             }
         }
+    }
+
+    fun publicar(titulo: String, texto: String) {
+        viewModelScope.launch {
+            _creacion.value = UiState.Cargando
+            repo.crear(NuevoPost(userId = 1, title = titulo.trim(), body = texto.trim()))
+                .onSuccess { _creacion.value = UiState.Exito(it) }
+                .onFailure { _creacion.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    fun limpiarCreacion() {
+        _creacion.value = null
     }
 }
