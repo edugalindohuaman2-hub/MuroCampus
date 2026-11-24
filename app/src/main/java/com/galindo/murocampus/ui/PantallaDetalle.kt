@@ -17,9 +17,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +50,15 @@ fun PantallaDetalle(
     }
 
     val estado by vm.detalle.collectAsStateWithLifecycle()
+    val estadoEliminado by vm.eliminado.collectAsStateWithLifecycle()
+
+    val elim = estadoEliminado
+    if (elim is UiState.Exito) {
+        LaunchedEffect(elim) {
+            vm.limpiarEliminado()
+            onVolver()
+        }
+    }
 
     when (val s = estado) {
         is UiState.Cargando -> {
@@ -69,7 +81,7 @@ fun PantallaDetalle(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 20.dp),
+                            .padding(bottom = 12.dp),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -124,6 +136,40 @@ fun PantallaDetalle(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+
+                    OutlinedButton(
+                        onClick = { vm.eliminar(datos.post.id) },
+                        enabled = estadoEliminado !is UiState.Cargando,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        if (estadoEliminado is UiState.Cargando) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = MaterialTheme.colorScheme.error,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = "Eliminar publicación",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    if (estadoEliminado is UiState.Error) {
+                        val elimError = (estadoEliminado as UiState.Error).mensaje
+                        Text(
+                            text = elimError,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
                     }
                 }
 
