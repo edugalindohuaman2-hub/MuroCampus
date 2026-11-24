@@ -34,6 +34,11 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _creacion = MutableStateFlow<UiState<Post>?>(null)
     val creacion: StateFlow<UiState<Post>?> = _creacion.asStateFlow()
 
+    private var listaOriginal: List<Post> = emptyList()
+
+    private val _consulta = MutableStateFlow("")
+    val consulta: StateFlow<String> = _consulta.asStateFlow()
+
     init {
         cargar()
     }
@@ -43,13 +48,31 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
         cargar()
     }
 
+    fun buscar(texto: String) {
+        _consulta.value = texto
+        aplicarBusqueda()
+    }
+
+    private fun aplicarBusqueda() {
+        val texto = _consulta.value
+        val filtrada = if (texto.isBlank()) {
+            listaOriginal
+        } else {
+            listaOriginal.filter { it.title.contains(texto, ignoreCase = true) }
+        }
+        _lista.value = UiState.Exito(filtrada)
+    }
+
     fun cargar() {
         viewModelScope.launch {
             _lista.value = UiState.Cargando
             val filtro = _usuarioFiltro.value
             val resultado = if (filtro == null) repo.listar() else repo.porUsuario(filtro)
             resultado
-                .onSuccess { _lista.value = UiState.Exito(it) }
+                .onSuccess {
+                    listaOriginal = it
+                    aplicarBusqueda()
+                }
                 .onFailure { _lista.value = UiState.Error(mensajeDe(it)) }
         }
     }
